@@ -30,7 +30,7 @@ The system operates across three primary layers:
 
 ```mermaid
 graph TD
-    subgraph Hardware Layer (ESP8266 Client)
+    subgraph "Hardware Layer (ESP8266 Client)"
         DHT22[DHT22 Temp/Hum Sensor] -->|Digital Pin| ESP[ESP8266 NodeMCU]
         PIR[PIR Motion Sensor] -->|Digital Input| ESP
         LDR[LDR Light Sensor] -->|Analog Input| ESP
@@ -38,13 +38,13 @@ graph TD
         ESP -->|Audible Alerts| Buzzer[Buzzer]
     end
 
-    subgraph Backend Layer (Flask Server)
+    subgraph "Backend Layer (Flask Server)"
         ESP -->|HTTP POST JSON| Flask[Flask Web Server]
         Flask -->|Read/Write| DB[(SQLite Database)]
         Flask -->|Computes| Metrics[Comfort Index & Energy Cost]
     end
 
-    subgraph Presentation Layer (Web Dashboard)
+    subgraph "Presentation Layer (Web Dashboard)"
         Flask -->|JSON APIs| UI[HTML5/CSS3/Vanilla JS UI]
         UI -->|ChartJS| Charts[Real-Time Trend Charts]
         UI -->|Data Export| CSV[CSV Exporter]
