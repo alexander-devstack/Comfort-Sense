@@ -1,0 +1,85 @@
+# Smart IoT for Offices - System Explanation
+
+## 1. System Overview
+The **ComfortSense Smart Office IoT System** is a real-time environmental monitoring and automation solution. It consists of three main layers:
+
+1.  **Hardware Layer (ESP8266)**: Collects sensor data (Temperature, Humidity, Light, Motion, People Count) and controls actuators (LEDs, Buzzer, Relay).
+2.  **Backend Layer (Python Flask)**: Receives data, processes logic (Comfort Score, Energy Cost), and stores it in a SQLite database.
+3.  **Frontend Layer (Web Dashboard)**: Visualizes real-time data, historical trends, and system alerts.
+
+---
+
+## 2. Sensor Logic & Response Thresholds
+
+### 🌡️ Temperature & Humidity (DHT22)
+The system continuously monitors the thermal comfort of the room.
+
+*   **Temperature**:
+    *   **Comfort Range**: 20°C – 27°C (Green LED)
+    *   **Warning Range**: 27°C – 30°C (Yellow LED)
+    *   **Critical Alert**: ≥ 30°C (Red LED)
+    *   **Response**: If Temperature ≥ 30°C, the RGB LED turns **RED**.
+
+*   **Humidity**:
+    *   **Optimal Range**: 40% – 60%
+    *   **High Humidity**: ≥ 70%
+    *   **Response**: If Humidity ≥ 70%, the **Buzzer beeps** every 10 seconds (unless muted) to alert occupants.
+
+### 💡 Adaptive Lighting (LDR + PIR)
+The system uses a Light Dependent Resistor (LDR) and people detection to automate lighting for energy efficiency.
+
+*   **Logic**: Lights turn ON only if:
+    1.  The room is **Occupied** (People Count > 0).
+    2.  The room is **Dark** (LDR value < 150).
+*   **Behavior**:
+    *   **Inverse Brightness**: The darker the room, the brighter the LED.
+    *   **Formula**: `Brightness = Map(LDR, 0, 150, 255, 0)`
+    *   **Response**: If the room is vacant, lights automatically turn **OFF** to save energy.
+
+### 🚶 Occupancy & Motion (PIR + IR Sensors)
+The system distinguishes between simple motion and actual people counting to provide accurate occupancy data.
+
+*   **Motion (PIR)**: Detects immediate movement.
+    *   **Response**: Triggers "Room Active" state. If no motion is detected for **60 seconds**, the room is marked as **Vacant**.
+*   **People Counting (IR Beam Breakers)**:
+    *   **Entry**: Sequence IR1 → IR2 increments count.
+    *   **Exit**: Sequence IR2 → IR1 decrements count.
+    *   **Response**: The system tracks the exact number of people. If Count > 0, the room is considered "Occupied" regardless of PIR timeout.
+
+---
+
+## 3. Computed Features (Backend Logic)
+
+The Flask backend is not just a passive receiver; it computes advanced metrics based on raw sensor data.
+
+### 📊 Comfort Score (0-100%)
+A calculated metric representing how "perfect" the room environment is.
+*   **Ideal Conditions**: 25°C and 50% Humidity.
+*   **Calculation**:
+    *   Deviation from 25°C reduces score (Weight: 50%).
+    *   Deviation from 50% Humidity reduces score (Weight: 50%).
+*   **Example**: A score of **100%** means conditions are exactly 25°C / 50% Humidity.
+
+### ⚡ Energy Cost Estimation
+Tracks the cost of electricity consumed by the smart lighting.
+*   **Formula**: `Cost = (LED_Wattage × Hours_Active) × Rate_Per_kWh`
+*   **Constants**:
+    *   LED Power: 10 Watts
+    *   Electricity Rate: ₹6.50 / kWh
+*   **Behavior**: Cost only accumulates when the room is **Occupied** and lights are **ON**.
+
+### 🚨 Suspicious Activity Alert
+A security feature to detect anomalies.
+*   **Trigger**: If the PIR sensor detects motion, but the People Count is **0**.
+*   **Meaning**: Someone might have entered without triggering the IR beams (e.g., tailored entry) or a sensor error occurred.
+*   **Response**: Dashboard displays a "🚨 Suspicious Activity" alert.
+
+---
+
+## 4. Hardware Actuator Summary
+
+| Component | Condition for Activation | Action |
+| :--- | :--- | :--- |
+| **RGB LED** | **Green**: Comfort<br>**Yellow**: Warning (T>27, H>60)<br>**Red**: Critical (T>30 or H>70) | Visual Status Indicator |
+| **White LED / Relay** | People Count > 0 **AND** Low Light (< 150) | Turns ON AC/Lights |
+| **Buzzer** | Humidity ≥ 70% | Beeps every 10s |

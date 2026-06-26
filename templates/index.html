@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comfortsense IoT Dashboard</title>
+    <meta name="description" content="Real-time IoT sensor monitoring dashboard for smart office environment">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <h1>Comfortsense</h1>
+                        <span class="logo-subtitle">Smart Office Monitor</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="header-clock" id="headerClock">--:--:--</div>
+                <div class="header-date" id="headerDate">--</div>
+            </div>
+            <div class="header-right">
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+                <div class="last-update" id="lastUpdate">
+                    Last update: --:--:--
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- AI Recommendations (Dynamic) -->
+            <div class="ai-recommendation-banner" id="recommendationBanner" style="display: none;">
+                <div class="ai-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path>
+                        <path d="M12 6a1 1 0 0 1 1 1v4a1 1 0 0 1-2 0V7a1 1 0 0 1 1-1zm0 10a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"></path>
+                    </svg>
+                </div>
+                <div class="ai-content">
+                    <span class="ai-title">🤖 Smart Recommendation</span>
+                    <span class="ai-desc" id="recommendationText">Outdoor is cooler — consider natural ventilation.</span>
+                </div>
+            </div>
+
+            <!-- Suspicious Activity Alert Banner (hidden by default) -->
+            <div class="alert-banner" id="alertBanner" style="display: none;">
+                <div class="alert-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <div class="alert-content">
+                    <span class="alert-title">⚠ Suspicious Activity Detected</span>
+                    <span class="alert-desc">Motion detected without any people in the room!</span>
+                </div>
+                <div class="alert-pulse"></div>
+            </div>
+
+            <!-- Room Status Banner -->
+            <div class="room-status-banner" id="roomStatusBanner">
+                <div class="room-status-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <div class="room-status-info">
+                    <span class="room-status-label">Room Status</span>
+                    <span class="room-status-value" id="occupancyStatus">Detecting...</span>
+                </div>
+                <div class="room-status-right">
+                    <!-- Arduino Hardware Status Indicators -->
+                    <div class="hw-status-group">
+                        <div class="hw-indicator" id="rgbIndicator" title="Arduino RGB LED Status">
+                            <div class="rgb-dot" id="rgbDot"></div>
+                            <span class="hw-label">LED</span>
+                        </div>
+                        <div class="hw-indicator" id="buzzerIndicator" title="Arduino Buzzer Status">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" id="buzzerIcon">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                            <span class="hw-label">Buzzer</span>
+                        </div>
+                    </div>
+                    <div class="uptime-badge" id="uptimeBadge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span id="uptimeValue">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Feature Row: People Count + Comfort Score -->
+            <div class="feature-row">
+                <!-- People Count Card -->
+                <div class="feature-card people-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon people-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="feature-label">People in Room</span>
+                            <span class="feature-sublabel">Estimated from Occupancy</span>
+                        </div>
+                    </div>
+                    <div class="people-count-display">
+                        <span class="people-count-number" id="peopleCountValue">0</span>
+                        <span class="people-count-unit">people</span>
+                    </div>
+                    <div class="people-bar-container">
+                        <div class="people-bar" id="peopleBar">
+                            <div class="people-bar-segment" data-index="1"></div>
+                            <div class="people-bar-segment" data-index="2"></div>
+                            <div class="people-bar-segment" data-index="3"></div>
+                            <div class="people-bar-segment" data-index="4"></div>
+                            <div class="people-bar-segment" data-index="5"></div>
+                            <div class="people-bar-segment" data-index="6"></div>
+                            <div class="people-bar-segment" data-index="7"></div>
+                            <div class="people-bar-segment" data-index="8"></div>
+                            <div class="people-bar-segment" data-index="9"></div>
+                            <div class="people-bar-segment" data-index="10"></div>
+                        </div>
+                        <div class="people-bar-labels">
+                            <span>0</span>
+                            <span>5</span>
+                            <span>10+</span>
+                        </div>
+                    </div>
+                    <div class="people-density" id="peopleDensity">
+                        <span class="density-indicator good"></span>
+                        <span>Low Density</span>
+                    </div>
+                </div>
+
+                <!-- Comfort Score Card -->
+                <div class="feature-card comfort-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon comfort-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="feature-label">Comfort Index</span>
+                            <span class="feature-sublabel">Indoor vs Ideal Conditions</span>
+                        </div>
+                    </div>
+                    <div class="comfort-display">
+                        <div class="comfort-ring-container">
+                            <svg class="comfort-ring" viewBox="0 0 120 120">
+                                <circle class="comfort-ring-bg" cx="60" cy="60" r="52" />
+                                <circle class="comfort-ring-fill" id="comfortRingFill" cx="60" cy="60" r="52" />
+                            </svg>
+                            <div class="comfort-ring-value">
+                                <span id="comfortScoreValue">--</span>
+                                <span class="comfort-ring-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="comfort-details">
+                            <div class="comfort-detail-row">
+                                <div class="comfort-detail-item">
+                                    <span class="comfort-detail-label">🌡 Temp Score</span>
+                                    <div class="comfort-mini-bar">
+                                        <div class="comfort-mini-fill temp-fill" id="comfortTempBar"></div>
+                                    </div>
+                                    <span class="comfort-detail-value" id="comfortTempScore">--%</span>
+                                </div>
+                                <div class="comfort-detail-item">
+                                    <span class="comfort-detail-label">💧 Humidity Score</span>
+                                    <div class="comfort-mini-bar">
+                                        <div class="comfort-mini-fill hum-fill" id="comfortHumBar"></div>
+                                    </div>
+                                    <span class="comfort-detail-value" id="comfortHumScore">--%</span>
+                                </div>
+                            </div>
+                            <div class="comfort-comparison">
+                                <div class="comfort-compare-item">
+                                    <span class="compare-label">Indoor</span>
+                                    <span class="compare-value" id="comfortIndoor">--°C / --%</span>
+                                </div>
+                                <div class="comfort-compare-divider">vs</div>
+                                <div class="comfort-compare-item">
+                                    <span class="compare-label">Ideal</span>
+                                    <span class="compare-value" id="comfortIdeal">25°C / 50%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Outdoor Conditions Card -->
+                <div class="feature-card outdoor-card">
+                    <div class="feature-card-header">
+                        <div class="feature-icon outdoor-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20z"></path>
+                                <path d="M2 12h20"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="feature-label">Outdoor Conditions</span>
+                            <span class="feature-sublabel">External Environment Baseline</span>
+                        </div>
+                    </div>
+                    <div class="outdoor-display">
+                        <div class="outdoor-values">
+                            <div class="outdoor-item">
+                                <span class="outdoor-label">Temperature</span>
+                                <span class="outdoor-value"><span id="outdoorTempValue">--</span>°C</span>
+                            </div>
+                            <div class="outdoor-item">
+                                <span class="outdoor-label">Humidity</span>
+                                <span class="outdoor-value"><span id="outdoorHumValue">--</span>%</span>
+                            </div>
+                        </div>
+                        <div class="efficiency-gauge">
+                            <div class="efficiency-header">
+                                <span class="efficiency-label">AC Efficiency</span>
+                                <span class="efficiency-badge" id="acEfficiencyBadge">PENDING</span>
+                            </div>
+                            <div class="thermal-delta">
+                                <span class="delta-label">Thermal Delta</span>
+                                <span class="delta-value" id="thermalDeltaValue">--°C</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- Sensor Cards Grid -->
+            <div class="cards-grid">
+                <!-- Temperature Card -->
+                <div class="sensor-card temperature-card">
+                    <div class="card-header">
+                        <div class="card-icon temperature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="card-label">Temperature</span>
+                    </div>
+                    <div class="card-value">
+                        <span class="value-number" id="tempValue">--</span>
+                        <span class="value-unit">°C</span>
+                    </div>
+                    <div class="card-gauge">
+                        <div class="gauge-track">
+                            <div class="gauge-fill temperature-gauge" id="tempGauge"></div>
+                        </div>
+                        <div class="gauge-labels">
+                            <span>0°</span>
+                            <span>50°</span>
+                        </div>
+                    </div>
+                    <div class="card-status" id="tempStatus">
+                        <span class="status-indicator good"></span>
+                        <span>Comfortable</span>
+                    </div>
+                </div>
+
+                <!-- Humidity Card -->
+                <div class="sensor-card humidity-card">
+                    <div class="card-header">
+                        <div class="card-icon humidity-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="card-label">Humidity</span>
+                    </div>
+                    <div class="card-value">
+                        <span class="value-number" id="humValue">--</span>
+                        <span class="value-unit">%</span>
+                    </div>
+                    <div class="card-gauge">
+                        <div class="gauge-track">
+                            <div class="gauge-fill humidity-gauge" id="humGauge"></div>
+                        </div>
+                        <div class="gauge-labels">
+                            <span>0%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    <div class="card-status" id="humStatus">
+                        <span class="status-indicator good"></span>
+                        <span>Optimal</span>
+                    </div>
+                </div>
+
+                <!-- Light Card -->
+                <div class="sensor-card light-card">
+                    <div class="card-header">
+                        <div class="card-icon light-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="5"></circle>
+                                <line x1="12" y1="1" x2="12" y2="3"></line>
+                                <line x1="12" y1="21" x2="12" y2="23"></line>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                <line x1="1" y1="12" x2="3" y2="12"></line>
+                                <line x1="21" y1="12" x2="23" y2="12"></line>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                            </svg>
+                        </div>
+                        <span class="card-label">Light Level</span>
+                    </div>
+                    <div class="card-value">
+                        <span class="value-number" id="lightValue">--</span>
+                        <span class="value-unit">lux</span>
+                    </div>
+                    <div class="card-gauge">
+                        <div class="gauge-track">
+                            <div class="gauge-fill light-gauge" id="lightGauge"></div>
+                        </div>
+                        <div class="gauge-labels">
+                            <span>Dark</span>
+                            <span>Bright</span>
+                        </div>
+                    </div>
+                    <div class="card-status" id="lightStatus">
+                        <span class="status-indicator good"></span>
+                        <span>Natural Light</span>
+                    </div>
+                </div>
+
+                <!-- Motion Card -->
+                <div class="sensor-card motion-card">
+                    <div class="card-header">
+                        <div class="card-icon motion-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                        </div>
+                        <span class="card-label">Motion</span>
+                    </div>
+                    <div class="card-value motion-value">
+                        <div class="motion-indicator" id="motionIndicator">
+                            <div class="motion-rings">
+                                <div class="ring ring-1"></div>
+                                <div class="ring ring-2"></div>
+                                <div class="ring ring-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="motion-status" id="motionStatus">
+                        <span class="status-text">No Motion</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Energy Cost Card -->
+            <div class="energy-section">
+                <div class="energy-card">
+                    <div class="energy-header">
+                        <div class="energy-title-group">
+                            <div class="feature-icon energy-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Energy Cost Monitor</h3>
+                                <span class="energy-subtitle">Real-time electricity expense tracking</span>
+                            </div>
+                        </div>
+                        <button class="energy-reset-btn" id="energyResetBtn" title="Reset energy counters">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            Reset
+                        </button>
+                    </div>
+                    <div class="energy-stats-grid">
+                        <div class="energy-stat">
+                            <div class="energy-stat-icon runtime-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
+                            <span class="energy-stat-label">LED Runtime</span>
+                            <span class="energy-stat-value" id="ledRuntime">0h 0m 0s</span>
+                        </div>
+                        <div class="energy-stat">
+                            <div class="energy-stat-icon watt-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                            </div>
+                            <span class="energy-stat-label">Energy Used</span>
+                            <span class="energy-stat-value" id="energyUsed">0.000 kWh</span>
+                        </div>
+                        <div class="energy-stat cost-stat">
+                            <div class="energy-stat-icon cost-icon">
+                                <span class="rupee-icon">₹</span>
+                            </div>
+                            <span class="energy-stat-label">Total Cost</span>
+                            <span class="energy-stat-value energy-cost-value" id="energyCost">₹0.00</span>
+                        </div>
+                        <div class="energy-stat">
+                            <div class="energy-stat-icon rate-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                    <rect x="1" y="3" width="15" height="13"></rect>
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                                </svg>
+                            </div>
+                            <span class="energy-stat-label">Rate</span>
+                            <span class="energy-stat-value" id="energyRate">₹6.50/kWh · 10W</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Sensor History</h3>
+                        <div class="chart-actions">
+                            <div class="chart-legend">
+                                <span class="legend-item temp-legend">
+                                    <span class="legend-dot"></span>
+                                    Temperature
+                                </span>
+                                <span class="legend-item hum-legend">
+                                    <span class="legend-dot"></span>
+                                    Humidity
+                                </span>
+                                <span class="legend-item outdoor-temp-legend">
+                                    <span class="legend-dot"></span>
+                                    Outdoor Temp
+                                </span>
+                            </div>
+                            <button class="export-btn" id="exportCsvBtn" title="Export data as CSV">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <h3 class="stats-title">24 Hour Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Avg Temperature</span>
+                        <span class="stat-value" id="avgTemp">--°C</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Avg Humidity</span>
+                        <span class="stat-value" id="avgHum">--%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Readings</span>
+                        <span class="stat-value" id="totalReadings">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Avg Light</span>
+                        <span class="stat-value" id="avgLight">--</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Comfortsense IoT Dashboard • Powered by ESP8266 + Flask • Built with ❤</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>

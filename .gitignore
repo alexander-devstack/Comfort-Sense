@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# VS Code settings
+.vscode/
+
+# Local diagnostic or temporary text dumps
+ipconfig_output.txt
+netstat_output.txt
+db_output.txt
